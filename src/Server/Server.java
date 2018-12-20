@@ -8,21 +8,20 @@ import java.awt.event.WindowEvent;
 import java.io.*;  
 import java.util.*;  
 import java.net.*;  
-import javax.swing.Action;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import model.Card;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
 import model.Deck;
 /*Chuong trinh chat don gian  
  Server nhan message tu Client  
  */  
 public class Server extends JFrame implements ActionListener{  
-    private JButton close;
-    private JButton sendName, startGame;
+    private JButton close, setPort, stop;
     public JTextArea user;
     private ServerSocket server;
     public Hashtable<String, ClientConnect> listUser;
@@ -30,10 +29,12 @@ public class Server extends JFrame implements ActionListener{
     private DataInputStream dis;
     public int numOfUser;
     public int numOfStartingUser;
+    public int numOfOpeningUser;
     ArrayList<Integer> currentScore;
+    ArrayList<String> currentCards;
     
     public Server()  {
-        super("Chat : Server");
+        super("Triple Cards : Server");
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         this.addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
@@ -53,7 +54,25 @@ public class Server extends JFrame implements ActionListener{
     private void addItem() {
         setLayout(new BorderLayout());
         
-        add(new JLabel("Status: \n"), BorderLayout.NORTH);
+        JTextField port = new JTextField(20);
+        setPort = new JButton("Set");
+        setPort.addActionListener(this);
+        
+        JPanel p_head = new JPanel(new BorderLayout());
+        JPanel p_port = new JPanel();
+        
+        p_port.add(new JLabel("Port:"));
+        p_port.add(port);
+        p_port.add(setPort);
+        p_head.add(p_port, BorderLayout.NORTH);
+        
+        
+        p_head.add(new JLabel("Status: \n"), BorderLayout.SOUTH, SwingConstants.CENTER);
+        p_head.add(new JPanel(), BorderLayout.EAST);
+        p_head.add(new JPanel(), BorderLayout.WEST);
+        add(p_head, BorderLayout.NORTH);
+        
+        
         add(new JPanel(), BorderLayout.EAST);
         add(new JPanel(), BorderLayout.WEST);
         
@@ -71,13 +90,9 @@ public class Server extends JFrame implements ActionListener{
         close.addActionListener(this);
         p2.add(close, BorderLayout.NORTH);
         
-        sendName = new JButton("Send the name");
-        sendName.addActionListener(this);
-        p2.add(sendName, BorderLayout.SOUTH);
-        
-        startGame = new JButton("Start game");
-        startGame.addActionListener(this);
-        p2.add(startGame);
+        stop = new JButton("Stop server");
+        stop.addActionListener(this);
+        p2.add(stop);
         
         add(p2, BorderLayout.SOUTH);
         
@@ -86,14 +101,20 @@ public class Server extends JFrame implements ActionListener{
     
     private void go () {
         try {
+            System.out.println("Server.Server.go()");
             listUser = new Hashtable<String, ClientConnect>();
             server = new ServerSocket(6666);
+            
             numOfUser = 0;
             numOfStartingUser = 0;
+            numOfOpeningUser = 0;
             
             user.append("Server started.\n");
+            
             while (true) {
+                
                 Socket soc = server.accept();
+                System.out.println("test");
                 dos = new DataOutputStream(soc.getOutputStream());
                 dis = new DataInputStream(soc.getInputStream());
                 System.out.println("connected");
@@ -110,21 +131,19 @@ public class Server extends JFrame implements ActionListener{
     }
     
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == sendName) {
-            sendEach();
-        } else if (e.getSource() == close) {
+        if (e.getSource() == close) {
             try {
             server.close();
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
             System.exit(0);
-        } else if (e.getSource() == startGame) {
-            System.out.println("button start game");
-            sendStartingNotif();
+        } else if (e.getSource() == setPort) {
+//            this.go();
+        } 
+        else if (e.getSource() == stop) {
+            
         }
-        
-        
     }
     
     public void sendAll(String from, String msg) {
@@ -138,17 +157,7 @@ public class Server extends JFrame implements ActionListener{
             }
         }
     }
-    
-    public void requestAddSeat(String from) {
-        Enumeration e = listUser.keys();
-        String name = null;
-        while (e.hasMoreElements()) {
-            name = (String) e.nextElement();
-            if (name.compareTo(from) != 0) {
-                listUser.get(name).sendMSG("7", from);
-            }
-        }
-    }
+
     
     public void sendAllUpdate(String from) {
         Enumeration e = listUser.keys();
@@ -171,24 +180,6 @@ public class Server extends JFrame implements ActionListener{
         return name;
     }
     
-    public void sendNotif(String data) {
-        try {
-            dos.writeUTF(data);
-            dos.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-    
-    public void SendNotif(String msg1, String msg2) {
-        sendNotif(msg1);
-        sendNotif(msg2);
-    }
-    
-    public void sendName() {
-        SendNotif("6", getAllName());
-    }
-    
     public void sendEach() {
         System.out.println("been to sendEach()");
         Enumeration e = listUser.keys();
@@ -197,6 +188,7 @@ public class Server extends JFrame implements ActionListener{
         ArrayList<Integer> hand = new ArrayList<>();
         Random rand = new Random();
         currentScore = new ArrayList<>();
+        currentCards = new ArrayList<>();
         int score = 0;
         
         while (e.hasMoreElements()) {
@@ -211,37 +203,20 @@ public class Server extends JFrame implements ActionListener{
                     i++;
                 } 
             }
+            currentScore.add(score%10);
             String string = hand.get(0) + " " +hand.get(1) + " " + hand.get(2);
             name = (String) e.nextElement();
             listUser.get(name).sendMSG("7", string);
+            currentCards.add(string);
             string = "";
             hand.clear();
-            currentScore.add(score%10);
             score = 0;
         }
     }
     
-    public void sendStartingNotif() {
-        Enumeration e = listUser.keys();
-        String name = null;
-        while (e. hasMoreElements()) {
-            name = (String) e.nextElement();
-            listUser.get(name).sendMSG("", "");
-            }
-        }
-    
-    public void sendReady() {
-        Enumeration e = listUser.keys();
-        String name = null;
-        while (e. hasMoreElements()) {
-            name = (String) e.nextElement();
-            listUser.get(name).sendMSG("6", "");
-        }
-    }
-    
-    public int getHighestScore() {
+    public int haveHighestScore() {
         int a = 0;
-        for (int i = 0; i<3; i++) {
+        for (int i = 0; i<numOfUser; i++) {
             a = (currentScore.get(i)<a) ? a : currentScore.get(i);
         }
         return a;
@@ -259,9 +234,9 @@ public class Server extends JFrame implements ActionListener{
         while (e.hasMoreElements()) {
             name = (String) e.nextElement();
             if (name.compareTo(from) != 0) {
-                listUser.get(name).sendMSG("3", from +" : "+ getScore(from));
+                listUser.get(name).sendMSG("9", from +" "+ getHand(from) + " " + getScore(from));
             }
-            else listUser.get(name).sendMSG("3", "Your score : "+ getScore(from));
+            else listUser.get(name).sendMSG("9", "Yours "+ getHand(from) + " " + getScore(from));
             i++;
         }
     }
@@ -279,19 +254,30 @@ public class Server extends JFrame implements ActionListener{
         return -1;
     }
     
-//    public void sendWinner() {
-//        Enumeration e = listUser.keys();
-//        int i = 0;
-//        String name = null;
-//        while (e.hasMoreElements()) {
-//            name = (String) e.nextElement();
-//            if (currentScore.get(i) == getHighestScore())
-//                listUser.get(name).sendMSG("3", name +" : "+ score);
-//            if (name.compareTo(from) != 0) {
-//                listUser.get(name).sendMSG("3", name +" : "+ score);
-//            }
-//            i++;
-//        }
-//    }
+    public String getHand(String player) {
+        Enumeration e = listUser.keys();
+        int i = 0;
+        String name = null;
+        while (e.hasMoreElements()) {
+            name = (String) e.nextElement();
+            if (name.compareTo(player) == 0) 
+                return currentCards.get(i);
+            i++;
+        }
+        return null;
+    }
+    
+    public void sendResult() {
+        Enumeration e = listUser.keys();
+        String name = null;
+        int i =0;
+        while (e. hasMoreElements()) {
+            name = (String) e.nextElement();
+            if (currentScore.get(i)< this.haveHighestScore())
+                listUser.get(name).sendMSG("6", "You lose");
+            else listUser.get(name).sendMSG("6", "You win");
+            i++;
+        }
+    }
 }
 

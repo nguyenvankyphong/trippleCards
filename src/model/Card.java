@@ -20,7 +20,7 @@ public class Card extends JLabel{
     
 
     public Card(String suit, int level, BufferedImage image) {
-        super(new ImageIcon(image.getScaledInstance(80, 100,Image.SCALE_SMOOTH)));
+        super(new ImageIcon(image.getScaledInstance(60, 75,Image.SCALE_SMOOTH)));
         this.suit = suit;
         this.level = level;
         this.status = 0;
