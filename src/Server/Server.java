@@ -70,7 +70,7 @@ public class Server extends JFrame implements ActionListener{
         p_head.add(new JLabel("Status: \n"), BorderLayout.SOUTH, SwingConstants.CENTER);
         p_head.add(new JPanel(), BorderLayout.EAST);
         p_head.add(new JPanel(), BorderLayout.WEST);
-        add(p_head, BorderLayout.NORTH);
+//        add(p_head, BorderLayout.NORTH);
         
         
         add(new JPanel(), BorderLayout.EAST);
